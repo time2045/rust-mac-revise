@@ -1,0 +1,58 @@
+name: Windows Single EXE
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Test
+        run: cargo test --locked
+
+      - name: Build release
+        run: cargo build --release --locked
+
+      - name: Verify single-file executable
+        shell: pwsh
+        run: |
+          $exe = "target/release/mac-address-manager.exe"
+          if (-not (Test-Path -LiteralPath $exe)) {
+            throw "Release executable was not produced."
+          }
+          $dependencies = (& dumpbin /dependents $exe | Out-String)
+          Write-Host $dependencies
+          if ($dependencies -match 'WebView2Loader\.dll') {
+            throw "The executable still imports WebView2Loader.dll and is not single-file."
+          }
+          if (Test-Path -LiteralPath "target/release/WebView2Loader.dll") {
+            throw "An unexpected WebView2Loader.dll was produced in the release directory."
+          }
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          Copy-Item -LiteralPath $exe -Destination dist/mac-address-manager.exe
+          Get-Item -LiteralPath dist/mac-address-manager.exe | Select-Object Name, Length
+
+      - name: Upload single EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-address-manager-windows-x64
+          path: dist/mac-address-manager.exe
+          if-no-files-found: error
