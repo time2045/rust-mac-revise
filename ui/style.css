@@ -364,3 +364,106 @@ td:last-child { min-width: 165px; max-width: 360px; }
   .banner-copy { flex-basis: 150px; }
 }
 @media (prefers-reduced-motion: reduce) { .loading-mark { animation: none; } }
+
+/* Compact density */
+html { font-size: 12px; }
+h1 { font-size: 21px; }
+h2 { font-size: 13px; }
+h3 { font-size: 12px; }
+.button { min-height: 32px; padding: 5px 10px; }
+.button .icon { width: 15px; height: 15px; }
+.button.small { min-height: 28px; padding: 3px 8px; font-size: 11px; }
+input, select { height: 32px; padding-left: 9px; padding-right: 9px; }
+.mac-input { height: 34px; font-size: 13px; }
+.mac-edit-row .button { height: 34px; min-height: 34px; padding-top: 6px; padding-bottom: 6px; }
+.main-content { overflow-x: hidden; }
+.adapter-list { overflow-x: hidden; }
+.table-scroll { overflow-x: hidden; }
+table { min-width: 0; table-layout: fixed; }
+th, td { padding: 10px 8px; }
+td { line-height: 1.6; }
+td:first-child { min-width: 0; }
+td:last-child { min-width: 0; max-width: none; }
+td .mac { white-space: normal; overflow-wrap: anywhere; }
+th:nth-child(1) { width: 22%; }
+th:nth-child(2) { width: 12%; }
+th:nth-child(3) { width: 20%; }
+th:nth-child(4) { width: 25%; }
+th:nth-child(5) { width: 21%; }
+
+@media (min-width: 781px) {
+  .app-shell { grid-template-columns: 164px minmax(0, 1fr); }
+  .sidebar { padding: 20px 10px 12px; }
+  .brand { margin-bottom: 26px; padding: 0 6px; gap: 8px; }
+  .brand-mark { width: 32px; height: 32px; }
+  .brand-copy strong { font-size: 13px; }
+  .brand-copy span { font-size: 8px; }
+  .nav-caption { margin-bottom: 8px; }
+  .nav-item { min-height: 36px; padding: 7px 10px; gap: 9px; font-size: 12px; }
+  .sidebar-bottom { padding: 18px 4px 0; }
+  .permission-caption { margin: 8px 0; }
+  .elevate-button { min-height: 30px; }
+  .sidebar-footnote { margin-top: 18px; }
+  .main-content { padding: 20px 22px 12px; }
+  .page-header { margin-bottom: 16px; gap: 14px; }
+  .eyebrow { margin-bottom: 3px; }
+  .page-header p { margin-top: 4px; font-size: 11px; }
+  .header-actions { gap: 6px; }
+  .global-banners { gap: 8px; margin-bottom: 12px; }
+  .banner { padding: 10px 11px; }
+  .banner.compact { padding: 9px; margin-bottom: 12px; }
+  .section-toolbar { margin-bottom: 10px; min-height: 28px; }
+  .adapter-workbench { grid-template-columns: minmax(176px, .72fr) minmax(0, 1.55fr); gap: 12px; }
+  .list-search { padding: 10px; }
+  .adapter-list { padding: 4px; max-height: 500px; }
+  .adapter-card { padding: 11px 9px; gap: 8px; margin-bottom: 2px; }
+  .adapter-card-description { margin-top: 3px; }
+  .adapter-card-mac, .adapter-card-status { margin-top: 6px; }
+  .list-footnote { padding: 9px; }
+  .detail-header { padding: 15px 16px 12px; }
+  .device-icon { width: 34px; height: 34px; }
+  .device-icon .icon { width: 19px; height: 19px; }
+  .device-title h2 { font-size: 15px; }
+  .device-title p { margin-top: 3px; font-size: 10px; }
+  .detail-badges { margin-top: 9px; gap: 6px; }
+  .detail-body { padding: 15px 16px; }
+  .address-grid { gap: 14px 12px; padding-bottom: 14px; }
+  .address-grid dt { font-size: 10px; }
+  .address-grid dd { margin-top: 4px; font-size: 12px; }
+  .editor-section { padding-top: 14px; }
+  .field-heading { margin-bottom: 6px; }
+  .validation { min-height: 20px; padding-top: 4px; }
+  .editor-actions { gap: 8px; margin-top: 9px; }
+  .write-reason { margin-top: 7px; }
+  .profile-loader { margin-top: 14px; padding-top: 12px; }
+  .profile-loader > label { margin-bottom: 6px; }
+  .detail-footer { padding: 10px 16px; }
+  .detail-footer .button { min-height: 29px; }
+  .device-identifiers { padding: 8px 16px; }
+  .section-footnote { margin-top: 10px; line-height: 1.7; }
+  .profiles-heading { margin: 16px 0 10px; }
+  .profile-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 255px), 1fr)); gap: 12px; }
+  .profile-card-header { padding: 14px 14px 10px; }
+  .profile-card > .mac { font-size: 18px; padding: 2px 14px 10px; }
+  .profile-meta { padding: 0 14px 12px; gap: 5px; }
+  .profile-card-actions { padding: 9px 14px; gap: 6px; }
+  .panel-heading { padding: 13px 16px; }
+  .setting-row { margin: 0 16px; padding: 14px 0; gap: 16px; }
+  .settings-footer { padding: 10px 16px; }
+  .settings-panel { margin-bottom: 12px; }
+  .local-data { padding: 14px 16px; gap: 16px; }
+  .help-section { margin-top: 20px; }
+  .help-grid { gap: 12px 20px; margin-top: 12px; }
+  .help-card { padding: 12px 0 12px 30px; }
+  .help-card p { margin-top: 6px; line-height: 1.75; }
+  .main-footer { margin-top: 18px; padding-top: 10px; }
+  .pagination { padding: 10px 14px; }
+  .modal-header { padding: 18px 20px 10px; }
+  .modal-symbol { width: 28px; height: 28px; }
+  .modal-header h2 { font-size: 16px; }
+  .modal-description { padding: 0 20px; line-height: 1.75; }
+  .confirm-details { margin: 14px 20px; padding: 11px; gap: 7px 10px; }
+  .confirm-warnings { margin: 14px 20px 18px; }
+  .modal-actions { padding: 12px 20px; }
+  .modal-fields { padding: 16px 20px 18px; }
+}
