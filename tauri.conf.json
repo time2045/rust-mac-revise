@@ -6,7 +6,7 @@
   "build": { "frontendDist": "ui" },
   "app": {
     "withGlobalTauri": true,
-    "windows": [{ "title": "MAC 地址管理器", "width": 1180, "height": 800, "minWidth": 850, "minHeight": 620 }],
+    "windows": [{ "title": "MAC 地址管理器", "width": 1000, "height": 700, "minWidth": 760, "minHeight": 540, "center": true }],
     "security": {
       "csp": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'none'; frame-src 'none'"
     }

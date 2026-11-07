@@ -16,6 +16,7 @@
 
 - Windows 10/11 x64。
 - 系统需要 WebView2 Runtime，通常已随 Windows 或 Edge 安装。
+- 如启动时提示缺少 `VCRUNTIME140.dll` 或 `VCRUNTIME140_1.dll`，安装 Microsoft Visual C++ 2015-2022 Redistributable（x64）。
 - 修改网卡需要管理员权限，可在界面左下角点击“提升管理员权限”。
 - “单文件”指不需要在 EXE 旁边放置 DLL；程序仍使用系统的 WebView2 和 Windows 系统库。
 
