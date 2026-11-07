@@ -104,6 +104,8 @@ pub struct History {
 pub struct Settings {
     pub monitor: bool,
     pub interval_seconds: u64,
+    #[serde(default)]
+    pub auto_repair: BTreeMap<String, bool>,
 }
 
 impl Default for Settings {
@@ -111,6 +113,7 @@ impl Default for Settings {
         Self {
             monitor: true,
             interval_seconds: 60,
+            auto_repair: BTreeMap::new(),
         }
     }
 }
@@ -119,6 +122,11 @@ impl Settings {
     pub fn validate(&self) -> AppResult<()> {
         if !matches!(self.interval_seconds, 30 | 60 | 120) {
             return Err("检测间隔只能为 30、60 或 120 秒".into());
+        }
+        for guid in self.auto_repair.keys() {
+            if normalize_guid(guid)? != *guid {
+                return Err("自动修复记录中的网卡 GUID 无效".into());
+            }
         }
         Ok(())
     }
@@ -170,7 +178,11 @@ impl Store {
             return Err("不支持的数据文件版本".into());
         }
         self.settings.validate()?;
-        if self.profiles.len() > 500 || self.history.len() > 300 || self.expectations.len() > 500 {
+        if self.profiles.len() > 500
+            || self.history.len() > 300
+            || self.expectations.len() > 500
+            || self.settings.auto_repair.len() > 500
+        {
             return Err("数据条数超过限制".into());
         }
         for p in &self.profiles {
@@ -179,6 +191,11 @@ impl Store {
         for (guid, mac) in &self.expectations {
             if normalize_guid(guid)? != *guid || normalize_mac(mac)? != *mac {
                 return Err("保存的目标地址格式不规范".into());
+            }
+        }
+        for (guid, enabled) in &self.settings.auto_repair {
+            if *enabled && !self.expectations.contains_key(guid) {
+                return Err("自动修复绑定了一个不存在的目标地址".into());
             }
         }
         if let Some(p) = &self.pending {
@@ -305,7 +322,8 @@ mod tests {
         assert!(validate_profile("hello\nworld", "02ABCDEF1234", None).is_err());
         assert!(Settings {
             monitor: true,
-            interval_seconds: 1
+            interval_seconds: 1,
+            ..Settings::default()
         }
         .validate()
         .is_err());

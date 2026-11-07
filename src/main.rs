@@ -12,6 +12,13 @@ use tauri::State;
 
 type AppState = Arc<Service<platform::WindowsBackend>>;
 
+#[derive(serde::Serialize)]
+struct AppInfo {
+    version: &'static str,
+    repository: &'static str,
+    releases: &'static str,
+}
+
 async fn blocking<T: Send + 'static>(
     state: State<'_, AppState>,
     operation: impl FnOnce(&Service<platform::WindowsBackend>) -> AppResult<T> + Send + 'static,
@@ -66,12 +73,49 @@ async fn save_settings(state: State<'_, AppState>, settings: Settings) -> AppRes
 }
 
 #[tauri::command]
+async fn set_auto_repair(
+    state: State<'_, AppState>,
+    guid: String,
+    enabled: bool,
+) -> AppResult<Store> {
+    blocking(state, move |s| s.set_auto_repair(&guid, enabled)).await
+}
+
+#[tauri::command]
+fn app_info() -> AppInfo {
+    AppInfo {
+        version: env!("CARGO_PKG_VERSION"),
+        repository: "https://github.com/time2045/rust-mac-revise",
+        releases: "https://github.com/time2045/rust-mac-revise/releases/latest",
+    }
+}
+
+#[tauri::command]
+fn open_project_page(page: String) -> AppResult<()> {
+    let url = match page.as_str() {
+        "repo" => "https://github.com/time2045/rust-mac-revise",
+        "releases" => "https://github.com/time2045/rust-mac-revise/releases/latest",
+        _ => return Err("不支持的链接".into()),
+    };
+    platform::open_url(url)
+}
+
+#[tauri::command]
 async fn apply_mac(
     state: State<'_, AppState>,
     guid: String,
     mac: String,
 ) -> AppResult<OperationResult> {
     blocking(state, move |s| s.apply(&guid, Some(&mac))).await
+}
+
+#[tauri::command]
+async fn auto_repair_mac(
+    state: State<'_, AppState>,
+    guid: String,
+    mac: String,
+) -> AppResult<OperationResult> {
+    blocking(state, move |s| s.auto_repair(&guid, &mac)).await
 }
 
 #[tauri::command]
@@ -138,7 +182,11 @@ fn run() -> AppResult<()> {
             import_profiles,
             export_profiles,
             save_settings,
+            set_auto_repair,
+            app_info,
+            open_project_page,
             apply_mac,
+            auto_repair_mac,
             restore_mac,
             recover_operation,
             relaunch_admin,

@@ -50,33 +50,32 @@
 
   <div class="app-shell">
     <aside class="sidebar" aria-label="应用侧栏">
-      <div class="brand"><span class="brand-mark"><svg class="icon"><use href="#i-network"/></svg></span><div class="brand-copy"><strong>MAC 地址管理器</strong><span>MAC MANAGER</span></div></div>
-      <div class="nav-caption">工作空间</div>
+      <div class="brand"><span class="brand-mark"><svg class="icon"><use href="#i-network"/></svg></span><div class="brand-copy"><strong>MAC 地址管理器</strong></div></div>
       <nav class="navigation" aria-label="主导航">
         <button class="nav-item active" data-page="adapters" aria-current="page" aria-label="网卡管理" title="网卡管理"><svg class="icon"><use href="#i-network"/></svg><span>网卡管理</span></button>
         <button class="nav-item" data-page="profiles" aria-label="地址方案" title="地址方案"><svg class="icon"><use href="#i-profile"/></svg><span>地址方案</span><span id="profile-count" class="nav-count">0</span></button>
         <button class="nav-item" data-page="history" aria-label="操作记录" title="操作记录"><svg class="icon"><use href="#i-history"/></svg><span>操作记录</span></button>
-        <button class="nav-item" data-page="settings" aria-label="设置与帮助" title="设置与帮助"><svg class="icon"><use href="#i-settings"/></svg><span>设置与帮助</span></button>
+        <button class="nav-item" data-page="settings" aria-label="设置" title="设置"><svg class="icon"><use href="#i-settings"/></svg><span>设置</span></button>
+        <button class="nav-item" data-page="about" aria-label="关于" title="关于"><svg class="icon"><use href="#i-info"/></svg><span>关于</span></button>
       </nav>
       <div class="sidebar-bottom">
         <div id="admin-pill" class="admin-pill" role="status"><svg class="icon"><use href="#i-shield"/></svg><span id="admin-label">检查权限</span></div>
-        <p class="permission-caption">修改网卡需要管理员权限</p>
         <button id="elevate-button" class="button elevate-button" disabled title="提升管理员权限" aria-label="提升管理员权限"><svg class="icon"><use href="#i-arrow"/></svg><span class="elevate-full">提升管理员权限</span><span class="elevate-short">提权</span></button>
-        <div class="sidebar-footnote"><span class="small-dot"></span> 本地运行 · 数据留在本机</div>
+        <div id="busy-status" class="sidebar-status" role="status" aria-live="polite">就绪</div>
       </div>
     </aside>
 
     <main id="main-content" class="main-content">
       <header class="page-header">
-        <div><div class="eyebrow">你的设备，你的地址</div><h1 id="page-title" tabindex="-1">网卡管理</h1><p id="page-subtitle">查看连接状态，安全管理网卡地址。</p></div>
-        <div class="header-actions"><button id="refresh-button" class="button" disabled><svg class="icon"><use href="#i-refresh"/></svg><span>刷新列表</span></button><span id="refresh-status" class="refresh-status" role="status">正在读取设备</span></div>
+        <h1 id="page-title" tabindex="-1">网卡管理</h1>
+        <div class="header-actions"><button id="refresh-button" class="button" disabled><svg class="icon"><use href="#i-refresh"/></svg><span>刷新</span></button><span id="refresh-status" class="refresh-status" role="status">正在读取设备</span></div>
       </header>
 
       <div class="global-banners">
         <section id="error-banner" class="banner danger" role="alert" hidden><svg class="icon"><use href="#i-info"/></svg><div class="banner-copy"><strong>操作未完成</strong><p id="error-message"></p></div><button id="dismiss-error" class="icon-button" aria-label="关闭错误提示"><svg class="icon"><use href="#i-close"/></svg></button></section>
         <section id="store-warning" class="banner warning" role="status" hidden><svg class="icon"><use href="#i-info"/></svg><div class="banner-copy"><strong>本地数据提示</strong><p id="store-warning-text"></p></div></section>
-        <section id="recovery-banner" class="banner warning" role="status" hidden><svg class="icon"><use href="#i-history"/></svg><div class="banner-copy"><strong>发现未完成的网卡操作</strong><p id="recovery-message"></p></div><button id="recover-button" class="button danger-outline" disabled>恢复上次配置</button></section>
-        <section id="uncertain-banner" class="banner danger" role="status" hidden><svg class="icon"><use href="#i-info"/></svg><div class="banner-copy"><strong>尚未确认系统状态</strong><p>为避免重复写入，已暂停网卡修改。请刷新列表，确认是否需要恢复上次配置。</p></div></section>
+        <section id="recovery-banner" class="banner warning" role="status" hidden><svg class="icon"><use href="#i-history"/></svg><div class="banner-copy"><strong>存在未完成的修改</strong><p id="recovery-message"></p></div><button id="recover-button" class="button danger-outline" disabled>恢复配置</button></section>
+        <section id="uncertain-banner" class="banner danger" role="status" hidden><svg class="icon"><use href="#i-info"/></svg><div class="banner-copy"><strong>系统状态未确认</strong><p>已暂停写入，请刷新后重试。</p></div></section>
         <section id="operation-result" class="banner info" role="status" hidden><svg class="icon"><use href="#i-info"/></svg><div class="banner-copy"><strong id="result-title"></strong><p id="result-message"></p></div><button id="dismiss-result" class="icon-button" aria-label="关闭操作结果"><svg class="icon"><use href="#i-close"/></svg></button></section>
       </div>
 
@@ -86,7 +85,6 @@
           <section class="panel adapter-panel" aria-label="网卡列表">
             <div class="list-search"><label class="search-field"><svg class="icon"><use href="#i-search"/></svg><input id="adapter-search" type="search" placeholder="搜索网卡" aria-label="搜索网卡名称、描述或地址" autocomplete="off"></label></div>
             <div id="adapter-list" class="adapter-list" aria-label="可选网卡"><div class="empty-state"><span class="loading-mark"></span><strong>正在读取网卡</strong><p>稍候片刻</p></div></div>
-            <div class="list-footnote">默认仅显示物理网卡</div>
           </section>
 
           <section class="panel detail-panel" aria-label="选中网卡详情">
@@ -98,32 +96,34 @@
                 <div id="config-error" class="inline-warning" role="status" hidden></div>
                 <dl class="address-grid">
                   <div><dt>当前地址</dt><dd id="current-mac" class="mac">—</dd></div>
-                  <div><dt>永久地址 <span id="permanent-note" class="field-note"></span></dt><dd id="permanent-mac" class="mac">—</dd></div>
+                  <div><dt>永久地址</dt><dd id="permanent-mac" class="mac">—</dd></div>
                   <div><dt>注册表覆盖</dt><dd id="configured-mac" class="mac">—</dd></div>
-                  <div><dt>上次预期地址</dt><dd id="expected-mac" class="mac">—</dd></div>
+                  <div><dt>上次目标</dt><dd id="expected-mac" class="mac">—</dd></div>
                 </dl>
                 <div class="editor-section">
-                  <div class="field-heading"><label for="mac-input">待应用地址</label><span class="field-note">仅在确认后写入</span></div>
+                  <div class="field-heading"><label for="mac-input">待应用地址</label></div>
                   <div class="mac-edit-row"><input id="mac-input" class="mac mac-input" type="text" spellcheck="false" autocomplete="off" maxlength="32" placeholder="02-00-00-00-00-01" aria-describedby="mac-validation" disabled><button id="random-button" class="button" disabled><svg class="icon"><use href="#i-random"/></svg><span>随机</span></button></div>
-                  <p id="mac-validation" class="validation" aria-live="polite">请输入一个有效的单播 MAC 地址。</p>
+                  <p id="mac-validation" class="validation" aria-live="polite">请输入有效的单播 MAC 地址。</p>
                   <div class="editor-actions"><button id="apply-button" class="button primary" disabled><svg class="icon"><use href="#i-shield"/></svg>应用地址</button><button id="save-profile-button" class="button" disabled><svg class="icon"><use href="#i-profile"/></svg>存为方案</button></div>
                   <p id="write-reason" class="write-reason" role="status"></p>
+                  <div class="auto-repair-row">
+                    <label class="auto-repair-label"><input id="auto-repair-input" type="checkbox" disabled><span>自动修复漂移</span></label>
+                    <span id="auto-repair-note" class="auto-repair-note">程序运行时生效</span>
+                  </div>
                 </div>
-                <div class="profile-loader"><label for="profile-select">使用已存方案</label><div class="input-action"><select id="profile-select" disabled><option value="">选择地址方案</option></select><button id="load-profile-button" class="button" disabled>载入</button></div></div>
+                <div class="profile-loader"><label for="profile-select">已存方案</label><div class="input-action"><select id="profile-select" disabled><option value="">选择方案</option></select><button id="load-profile-button" class="button" disabled>载入</button></div></div>
               </div>
-              <footer class="detail-footer"><span>移除覆盖，交由驱动决定地址</span><button id="restore-button" class="button danger-outline" disabled>恢复默认</button></footer>
-              <details class="device-identifiers"><summary>设备标识</summary><dl><dt>GUID</dt><dd id="adapter-guid">—</dd><dt>PNP ID</dt><dd id="adapter-pnp">—</dd></dl></details>
+              <footer class="detail-footer"><span>移除注册表覆盖</span><button id="restore-button" class="button danger-outline" disabled>恢复默认</button></footer>
+              <details class="device-identifiers"><summary>设备信息</summary><dl><dt>GUID</dt><dd id="adapter-guid">—</dd><dt>PNP ID</dt><dd id="adapter-pnp">—</dd></dl></details>
             </div>
           </section>
         </div>
-        <p class="section-footnote"><svg class="icon"><use href="#i-info"/></svg>载入不等于应用。修改前会再次确认，不会强制重启电脑。</p>
       </section>
 
       <section id="page-profiles" class="page-view" aria-label="地址方案" hidden>
-        <div class="section-toolbar wrap-toolbar"><label class="search-field toolbar-search"><svg class="icon"><use href="#i-search"/></svg><input id="profile-search" type="search" placeholder="搜索名称、地址或绑定网卡" aria-label="搜索地址方案"></label><div class="button-group"><button id="import-button" class="button" disabled><svg class="icon"><use href="#i-upload"/></svg>导入 JSON</button><button id="export-button" class="button" disabled><svg class="icon"><use href="#i-download"/></svg>导出 JSON</button></div><input id="import-file" type="file" accept=".json,application/json" hidden></div>
-        <div class="section-heading profiles-heading"><h2>我的方案</h2><span id="profiles-summary" class="count-label">—</span></div>
+        <div class="section-toolbar wrap-toolbar"><label class="search-field toolbar-search"><svg class="icon"><use href="#i-search"/></svg><input id="profile-search" type="search" placeholder="搜索方案" aria-label="搜索地址方案"></label><span id="profiles-summary" class="count-label">—</span><div class="button-group"><button id="import-button" class="button" disabled><svg class="icon"><use href="#i-upload"/></svg>导入</button><button id="export-button" class="button" disabled><svg class="icon"><use href="#i-download"/></svg>导出</button></div><input id="import-file" type="file" accept=".json,application/json" hidden></div>
         <div id="profile-list" class="profile-grid"></div>
-        <p class="section-footnote">方案在本机保存，重启后仍保留；载入方案只填入编辑框，不直接修改网卡。</p>
+        <p class="section-footnote">保存于本机；载入不写入网卡。</p>
       </section>
 
       <section id="page-history" class="page-view" aria-label="操作记录" hidden>
@@ -131,19 +131,27 @@
         <div class="panel history-panel"><div class="table-scroll"><table><caption class="sr-only">网卡写入尝试，最新记录在前</caption><thead><tr><th scope="col">时间 / 网卡</th><th scope="col">操作</th><th scope="col">原地址</th><th scope="col">请求 / 实际地址</th><th scope="col">结果</th></tr></thead><tbody id="history-body"></tbody></table></div><div id="history-empty" class="empty-state" hidden><svg class="empty-icon"><use href="#i-history"/></svg><strong>暂无操作记录</strong><p>网卡写入尝试会记录在这里。</p></div><footer class="pagination"><label>每页 <select id="history-size" aria-label="每页记录数"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select> 条</label><div class="button-group"><button id="history-prev" class="button small" aria-label="上一页" disabled>上一页</button><span id="history-page" aria-live="polite">1 / 1</span><button id="history-next" class="button small" aria-label="下一页" disabled>下一页</button></div></footer></div>
       </section>
 
-      <section id="page-settings" class="page-view" aria-label="设置与帮助" hidden>
-        <section class="panel settings-panel" aria-labelledby="monitor-heading"><header class="panel-heading"><svg class="icon"><use href="#i-settings"/></svg><h2 id="monitor-heading">状态检测</h2></header><form id="settings-form"><div class="setting-row"><div><label for="monitor-input" class="setting-title">自动检测地址变化</label><p>仅刷新快照，发现偏移时提示；不会自动重新应用地址。</p></div><label class="switch"><input id="monitor-input" type="checkbox" checked aria-label="自动检测地址变化"><span class="switch-track"></span></label></div><div class="setting-row"><div><label for="interval-input" class="setting-title">检测间隔</label><p>应用可见且没有进行中的请求时检测。</p></div><select id="interval-input"><option value="30">30 秒</option><option value="60" selected>60 秒</option><option value="120">120 秒</option></select></div><div class="settings-footer"><span id="settings-state" class="muted" role="status">默认开启 · 每 60 秒</span><button id="save-settings-button" class="button primary" type="submit" disabled>保存设置</button></div></form></section>
-        <section class="panel settings-panel" aria-labelledby="local-heading"><header class="panel-heading"><svg class="icon"><use href="#i-folder"/></svg><h2 id="local-heading">本地数据</h2></header><div class="local-data"><div><span class="muted">数据目录</span><code id="data-directory">—</code></div><button id="open-data-button" class="button" disabled>打开数据目录<svg class="icon"><use href="#i-arrow"/></svg></button></div></section>
-        <section class="help-section" aria-labelledby="help-heading"><div class="section-heading"><h2 id="help-heading">使用须知</h2><span class="count-label">修改前了解这些</span></div><div class="help-grid">
-          <article class="help-card"><span class="help-number">01</span><h3>持久配置，不等于驱动支持</h3><p>本工具写入持久的注册表地址覆盖，但无法强制驱动支持。部分 Intel Wi-Fi 网卡对地址修改有限制，写入可能不生效。永久地址为「—」表示驱动未提供，不能据此推断原始地址。</p></article>
-          <article class="help-card"><span class="help-number">02</span><h3>留意 Windows 随机硬件地址</h3><p>请在 Windows 设置中手动关闭 Wi-Fi 全局及每个已保存网络（SSID）的随机硬件地址，以免系统覆盖预期地址。本工具不会替你改变这些开关。</p><button id="open-wifi-button" class="text-button" disabled>打开 Wi-Fi 设置<svg class="icon"><use href="#i-arrow"/></svg></button></article>
-          <article class="help-card"><span class="help-number">03</span><h3>连接可能短暂中断</h3><p>应用、恢复默认或恢复上次配置可能临时断网，请先保存联网工作。原本禁用的网卡会保持禁用，待下次手动启用后验证；工具不会强制重启电脑，也不会为了应用地址而强制启用已禁用网卡。</p></article>
-          <article class="help-card"><span class="help-number">04</span><h3>偏移只检测，不自动修正</h3><p>驱动升级、VPN 或系统随机地址功能可能重置覆盖。已存方案在重启后保留，但软件仅在运行时检测地址偏移，未安装开机任务。点击「载入目标」后仍需手动确认应用。</p></article>
-          <article class="help-card"><span class="help-number">05</span><h3>区分这几种地址</h3><p>当前地址是系统报告的实际地址；永久地址来自驱动；注册表覆盖是已写入的配置；上次预期地址只在成功或待启用时更新。待应用地址是编辑草稿，保存方案和载入都不会写网卡。</p></article>
-          <article class="help-card"><span class="help-number">06</span><h3>失败与恢复</h3><p>每次写入尝试都会保留记录。失败后可能自动回滚；若出现未完成操作，必须先恢复上次配置，才可继续修改。恢复默认会移除覆盖，但实际地址仍取决于驱动和 Windows 设置。恢复记录属于当前 Windows 用户；恢复前请确认未被其他用户或工具再次修改。</p></article>
-        </div><p id="demo-help" class="section-footnote" hidden>演示数据仅存于内存，刷新浏览器会重置。可用顶部场景选择器，或 ?empty=1、?error=1、?admin=0、?pending=1、?outcome=failed 测试边界。</p></section>
+      <section id="page-settings" class="page-view" aria-label="设置" hidden>
+        <section class="panel settings-panel" aria-labelledby="monitor-heading"><header class="panel-heading"><svg class="icon"><use href="#i-settings"/></svg><h2 id="monitor-heading">状态检测</h2></header><form id="settings-form"><div class="setting-row"><div><label for="monitor-input" class="setting-title">自动检测地址变化</label></div><label class="switch"><input id="monitor-input" type="checkbox" checked aria-label="自动检测地址变化"><span class="switch-track"></span></label></div><div class="setting-row"><div><label for="interval-input" class="setting-title">检测间隔</label></div><select id="interval-input"><option value="30">30 秒</option><option value="60" selected>60 秒</option><option value="120">120 秒</option></select></div><div class="settings-footer"><span id="settings-state" class="muted" role="status">程序运行时生效</span><button id="save-settings-button" class="button primary" type="submit" disabled>保存</button></div></form></section>
+        <section class="panel settings-panel" aria-labelledby="local-heading"><header class="panel-heading"><svg class="icon"><use href="#i-folder"/></svg><h2 id="local-heading">本地数据</h2></header><div class="local-data"><div><span class="muted">数据目录</span><code id="data-directory">—</code></div><button id="open-data-button" class="button" disabled>打开目录<svg class="icon"><use href="#i-arrow"/></svg></button></div></section>
+        <section class="notes-section" aria-labelledby="notes-heading"><div class="section-heading"><h2 id="notes-heading">说明</h2></div><dl class="notes-list">
+          <div><dt>驱动</dt><dd>部分 Intel Wi-Fi 网卡不支持任意 MAC，写入成功不保证生效。</dd></div>
+          <div><dt>随机地址</dt><dd>Windows 的全局或 SSID 随机硬件地址可能覆盖目标地址，需在系统设置中关闭。</dd></div>
+          <div><dt>断网与恢复</dt><dd>应用或恢复时可能短暂断网；原禁用网卡保持禁用；失败自动回滚。</dd></div>
+        </dl><div class="notes-actions"><button id="open-wifi-button" class="button" disabled>打开 Wi-Fi 设置<svg class="icon"><use href="#i-arrow"/></svg></button></div></section>
       </section>
-      <footer class="main-footer"><span>MAC MANAGER</span><span id="busy-status" role="status" aria-live="polite">本地设备管理</span></footer>
+
+      <section id="page-about" class="page-view" aria-label="关于" hidden>
+        <div class="panel about-panel">
+          <header class="about-header"><span class="brand-mark"><svg class="icon"><use href="#i-network"/></svg></span><div><h2>MAC 地址管理器</h2><p>Windows x64 · 单文件</p></div></header>
+          <dl class="about-list">
+            <div><dt>版本</dt><dd id="about-version">—</dd></div>
+            <div><dt>仓库</dt><dd><button id="open-repo" class="link-button" disabled><span>time2045/rust-mac-revise</span><svg class="icon"><use href="#i-arrow"/></svg></button></dd></div>
+            <div><dt>发行版</dt><dd><button id="open-releases" class="link-button" disabled><span>下载最新版本</span><svg class="icon"><use href="#i-arrow"/></svg></button></dd></div>
+            <div><dt>数据目录</dt><dd id="about-data-dir" class="about-path">—</dd></div>
+          </dl>
+        </div>
+      </section>
     </main>
   </div>
 

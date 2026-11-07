@@ -46,7 +46,7 @@ function initialStore() {
     ],
     expectations: {},
     history,
-    settings: { monitor: true, interval_seconds: 60 },
+    settings: { monitor: true, interval_seconds: 60, auto_repair: {} },
     pending: null,
   };
 }
@@ -132,7 +132,8 @@ export function createDemoBackend(search = "") {
   function write(guid, value, action) {
     const adapter = getAdapter(guid);
     requireWrite(adapter);
-    const requestedMac = action === "apply" ? normalizeMac(value) : null;
+    const isApply = action === "apply" || action === "auto_repair";
+    const requestedMac = isApply ? normalizeMac(value) : null;
     const before = clone(adapter);
     const pending = journal(adapter, requestedMac, action);
     let outcome;
@@ -154,12 +155,17 @@ export function createDemoBackend(search = "") {
       if (adapter.admin_enabled) {
         adapter.mac = target;
         outcome = "success";
-        message = action === "apply" ? "演示：地址覆盖已应用，实际地址已验证。" : "演示：已移除地址覆盖，当前使用驱动默认地址。";
+        message = isApply ? "演示：地址覆盖已应用，实际地址已验证。" : "演示：已移除地址覆盖，当前使用驱动默认地址。";
       } else {
         outcome = "pending";
         message = "演示：配置已保存；网卡保持禁用，待下次手动启用后验证。";
       }
-      snapshot.store.expectations[guid] = target;
+      if (action === "restore") {
+        delete snapshot.store.expectations[guid];
+        delete snapshot.store.settings.auto_repair[guid];
+      } else {
+        snapshot.store.expectations[guid] = target;
+      }
       snapshot.store.pending = null;
     }
     record(adapter, action, requestedMac, before.mac, outcome, message);
@@ -233,10 +239,23 @@ export function createDemoBackend(search = "") {
     export_profiles() { return JSON.stringify({ version: 1, profiles: snapshot.store.profiles }, null, 2); },
     save_settings({ settings }) {
       if (!settings || typeof settings.monitor !== "boolean" || ![30, 60, 120].includes(settings.interval_seconds)) throw new Error("检测设置无效。");
-      snapshot.store.settings = { monitor: settings.monitor, interval_seconds: settings.interval_seconds };
+      snapshot.store.settings.monitor = settings.monitor;
+      snapshot.store.settings.interval_seconds = settings.interval_seconds;
       return snapshot.store;
     },
+    set_auto_repair({ guid, enabled }) {
+      getAdapter(guid);
+      if (enabled && !snapshot.store.expectations[guid]) throw new Error("请先应用地址。");
+      if (enabled) snapshot.store.settings.auto_repair[guid] = true;
+      else delete snapshot.store.settings.auto_repair[guid];
+      return snapshot.store;
+    },
+    app_info() {
+      return { version: "0.2.0", repository: "https://github.com/time2045/rust-mac-revise", releases: "https://github.com/time2045/rust-mac-revise/releases/latest" };
+    },
+    open_project_page() { return null; },
     apply_mac({ guid, mac }) { return write(guid, mac, "apply"); },
+    auto_repair_mac({ guid, mac }) { return write(guid, mac, "auto_repair"); },
     restore_mac({ guid }) { return write(guid, null, "restore"); },
     recover_operation() { return recover(); },
     relaunch_admin() { snapshot.admin = true; return null; },

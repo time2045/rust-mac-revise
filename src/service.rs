@@ -98,12 +98,43 @@ impl<B: Backend> Service<B> {
         settings.validate()?;
         let mut store = self.lock()?;
         let mut next = store.data.clone();
-        next.settings = settings;
+        next.settings.monitor = settings.monitor;
+        next.settings.interval_seconds = settings.interval_seconds;
+        store.commit(next)?;
+        Ok(store.data.clone())
+    }
+
+    pub fn set_auto_repair(&self, guid: &str, enabled: bool) -> AppResult<Store> {
+        let guid = normalize_guid(guid)?;
+        let mut store = self.lock()?;
+        store.ensure_writable()?;
+        if enabled && !store.data.expectations.contains_key(&guid) {
+            return Err("请先应用地址，再启用自动修复".into());
+        }
+        let mut next = store.data.clone();
+        if enabled {
+            next.settings.auto_repair.insert(guid, true);
+        } else {
+            next.settings.auto_repair.remove(&guid);
+        }
         store.commit(next)?;
         Ok(store.data.clone())
     }
 
     pub fn apply(&self, guid: &str, mac: Option<&str>) -> AppResult<OperationResult> {
+        self.apply_inner(guid, mac, None)
+    }
+
+    pub fn auto_repair(&self, guid: &str, mac: &str) -> AppResult<OperationResult> {
+        self.apply_inner(guid, Some(mac), Some("auto_repair"))
+    }
+
+    fn apply_inner(
+        &self,
+        guid: &str,
+        mac: Option<&str>,
+        action: Option<&str>,
+    ) -> AppResult<OperationResult> {
         let guid = normalize_guid(guid)?;
         let target = mac.map(normalize_mac).transpose()?;
         let mut store = self.lock()?;
@@ -138,7 +169,13 @@ impl<B: Backend> Service<B> {
             was_enabled: adapter.admin_enabled,
             previous_mac: adapter.mac.clone(),
             requested_mac: target.clone(),
-            action: if target.is_some() { "apply" } else { "restore" }.into(),
+            action: action.map(str::to_owned).unwrap_or_else(|| {
+                if target.is_some() {
+                    "apply".into()
+                } else {
+                    "restore".into()
+                }
+            }),
         };
         if pending.requested_mac.is_none() && pending.previous_override.is_none() {
             return self.finish(
@@ -327,6 +364,7 @@ impl<B: Backend> Service<B> {
                 }
                 None => {
                     next.expectations.remove(&pending.guid);
+                    next.settings.auto_repair.remove(&pending.guid);
                 }
             }
         }
@@ -710,6 +748,34 @@ mod tests {
         assert_eq!(result.outcome, "rolled_back");
         assert!(result.message.contains("与操作前不同"));
         assert!(s.snapshot().unwrap().store.pending.is_none());
+        cleanup(&s);
+    }
+
+    #[test]
+    fn auto_repair_requires_target_and_survives_settings_save() {
+        let s = service(FakeBackend::new());
+        assert!(s.set_auto_repair(GUID, true).is_err());
+        s.apply(GUID, Some(TARGET)).unwrap();
+        s.set_auto_repair(GUID, true).unwrap();
+        assert!(s.snapshot().unwrap().store.settings.auto_repair[GUID]);
+        s.save_settings(Settings {
+            monitor: false,
+            interval_seconds: 120,
+            ..Settings::default()
+        })
+        .unwrap();
+        let store = s.snapshot().unwrap().store;
+        assert!(!store.settings.monitor);
+        assert_eq!(store.settings.interval_seconds, 120);
+        assert!(store.settings.auto_repair[GUID]);
+        s.apply(GUID, None).unwrap();
+        assert!(!s
+            .snapshot()
+            .unwrap()
+            .store
+            .settings
+            .auto_repair
+            .contains_key(GUID));
         cleanup(&s);
     }
 

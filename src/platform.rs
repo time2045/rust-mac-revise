@@ -411,6 +411,13 @@ pub fn open_wifi_settings() -> AppResult<()> {
     shell_open("open", Path::new("ms-settings:network-wifi"), None)
 }
 
+pub fn open_url(url: &str) -> AppResult<()> {
+    if !url.starts_with("https://github.com/time2045/rust-mac-revise") {
+        return Err("不允许的链接".into());
+    }
+    shell_open("open", Path::new(url), None)
+}
+
 pub fn open_path(path: &Path) -> AppResult<()> {
     fs::create_dir_all(path).map_err(|e| e.to_string())?;
     shell_open("open", path, None)
