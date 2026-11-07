@@ -1,6 +1,7 @@
 /target/
 /dist/
 /artifacts/
+/gen/
 *.zip
 /.cargo/config.toml
 /instance.lock
