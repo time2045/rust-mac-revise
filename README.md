@@ -8,9 +8,11 @@
 
 ## 下载与运行
 
-1. 打开 [Windows Single EXE 工作流](https://github.com/time2045/rust-mac-revise/actions/workflows/build-windows.yml)。
-2. 选择最近一次成功的运行，在页面底部下载 `mac-address-manager-windows-x64` artifact。
-3. 解压后得到一个 `mac-address-manager.exe`，双击运行。
+1. 打开 [Releases](https://github.com/time2045/rust-mac-revise/releases/latest)。
+2. 下载最新版本的 `mac-address-manager.exe`。
+3. 双击运行，无需安装。
+
+维护者推送 `v*` 标签后，GitHub Actions 会自动构建单文件并创建对应的 Release。
 
 运行要求：
 

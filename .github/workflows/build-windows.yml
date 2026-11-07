@@ -3,6 +3,10 @@ name: Windows Single EXE
 on:
   push:
     branches: [main]
+    tags: ["v*"]
+    paths-ignore:
+      - ".github/**"
+      - "README.md"
   pull_request:
   workflow_dispatch:
 
@@ -60,3 +64,36 @@ jobs:
           name: mac-address-manager-windows-x64
           path: dist/mac-address-manager.exe
           if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download single EXE
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-address-manager-windows-x64
+          path: release
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ github.ref_name }}
+          files: release/mac-address-manager.exe
+          fail_on_unmatched_files: true
+          body: |
+            ## 下载
+
+            - `mac-address-manager.exe`：Windows 10/11 x64 单文件版，无需安装。
+
+            ## 说明
+
+            - 单个 EXE，不依赖旁加载的 `WebView2Loader.dll`。
+            - 默认窗口 1000×700 居中，紧凑布局，页面无横向滚动条。
+            - 修改网卡需要管理员权限；部分 Intel Wi-Fi 驱动可能不支持任意 MAC。
+            - 系统需 WebView2 Runtime；如提示缺少 `VCRUNTIME140.dll`，请安装 Microsoft Visual C++ 2015-2022 Redistributable（x64）。
