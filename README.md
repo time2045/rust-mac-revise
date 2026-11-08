@@ -2,7 +2,7 @@
 
 [![Windows Single EXE](https://github.com/time2045/rust-mac-revise/actions/workflows/build-windows.yml/badge.svg)](https://github.com/time2045/rust-mac-revise/actions/workflows/build-windows.yml)
 
-当前版本：v0.2.0 · [下载最新版](https://github.com/time2045/rust-mac-revise/releases/latest)
+当前版本：v0.2.1 · [下载最新版](https://github.com/time2045/rust-mac-revise/releases/latest)
 
 面向 Windows 的网卡 MAC 地址管理工具，使用 Rust 1.87 + Tauri 2 构建。支持地址方案持久保存、应用前确认、写入后回读校验、失败自动回滚和地址漂移提醒。
 

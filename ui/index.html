@@ -59,9 +59,9 @@
         <button class="nav-item" data-page="about" aria-label="关于" title="关于"><svg class="icon"><use href="#i-info"/></svg><span>关于</span></button>
       </nav>
       <div class="sidebar-bottom">
-        <div id="admin-pill" class="admin-pill" role="status"><svg class="icon"><use href="#i-shield"/></svg><span id="admin-label">检查权限</span></div>
-        <button id="elevate-button" class="button elevate-button" disabled title="提升管理员权限" aria-label="提升管理员权限"><svg class="icon"><use href="#i-arrow"/></svg><span class="elevate-full">提升管理员权限</span><span class="elevate-short">提权</span></button>
-        <div id="busy-status" class="sidebar-status" role="status" aria-live="polite">就绪</div>
+        <div id="admin-pill" class="permission-state" role="status"><svg class="icon"><use href="#i-shield"/></svg><span id="admin-label">检查权限</span><span class="permission-dot" aria-hidden="true"></span></div>
+        <button id="elevate-button" class="button elevate-button" disabled hidden title="提升权限" aria-label="提升权限"><svg class="icon"><use href="#i-arrow"/></svg><span>提升权限</span></button>
+        <div class="sidebar-statusline"><span id="busy-status" role="status" aria-live="polite">就绪</span></div>
       </div>
     </aside>
 

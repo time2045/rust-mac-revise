@@ -533,8 +533,9 @@ function renderAbout() {
 }
 function renderGlobal() {
   const snapshot = state.snapshot;
-  text("admin-label", snapshot ? snapshot.admin ? "管理员" : "只读模式" : "检查权限");
+  text("admin-label", snapshot ? snapshot.admin ? "管理员权限" : "只读模式" : "检查权限");
   $("admin-pill").classList.toggle("is-admin", Boolean(snapshot?.admin));
+  $("admin-pill").classList.toggle("is-readonly", Boolean(snapshot) && !snapshot.admin);
   shown("store-warning", Boolean(snapshot?.store_warning));
   text("store-warning-text", snapshot?.store_warning);
   const pending = snapshot?.store.pending;
@@ -560,8 +561,9 @@ function renderControls() {
   const validation = validateMac(draft()?.value || "");
   const reason = writeReason(adapter);
   $("refresh-button").disabled = busy;
-  $("elevate-button").disabled = busy || Boolean(state.snapshot?.admin);
-  $("elevate-button").title = state.snapshot?.admin ? "已拥有管理员权限" : "提升管理员权限";
+  $("elevate-button").hidden = !ready || Boolean(state.snapshot?.admin);
+  $("elevate-button").disabled = busy;
+  $("elevate-button").title = "提升权限";
   const editingLocked = busy && !["读取快照", "刷新列表"].includes(state.busyLabel);
   $("mac-input").disabled = editingLocked || !adapter;
   $("random-button").disabled = busy || !adapter;
