@@ -13,10 +13,10 @@
 ## 下载与运行
 
 1. 打开 [Releases](https://github.com/time2045/rust-mac-revise/releases/latest)。
-2. 下载 `MAC-Address-Manager-vX.Y.Z.exe` 直接运行，或下载同名 ZIP 解压出中文文件名 `MAC地址管理器-vX.Y.Z.exe`。
-3. 双击运行，无需安装。
+2. 下载 `MAC-Address-Manager-vX.Y.Z.exe`，双击运行，无需安装。
+3. GitHub 的资源显示标签为 `MAC地址管理器_vX.Y.Z.exe`；实际下载文件名会被 GitHub 改为英文，下载后可自行重命名。
 
-GitHub Releases 会重写中文资源名，因此直接下载的 EXE 使用英文名；ZIP 内的 EXE 保留中文+版本号。Git 标签使用 `vX.Y.Z` 以保持自动构建触发稳定。
+GitHub Releases 会重写中文资源文件名，因此实际下载文件名使用英文；Release 标题和资源标签保留中文+版本号。Git 标签使用 `vX.Y.Z` 以保持自动构建触发稳定。
 
 维护者推送 `v*` 标签后，GitHub Actions 会自动构建单文件并创建对应的 Release。
 

@@ -82,29 +82,28 @@ jobs:
         shell: bash
         run: |
           set -e
-          mkdir -p release/package
-          cp release/mac-address-manager.exe "release/package/MAC地址管理器-${GITHUB_REF_NAME}.exe"
-          cp release/mac-address-manager.exe "release/MAC-Address-Manager-${GITHUB_REF_NAME}.exe"
-          (cd release/package && zip -q "../MAC-Address-Manager-${GITHUB_REF_NAME}.zip" *.exe)
-          rm -rf release/package release/mac-address-manager.exe
+          mv release/mac-address-manager.exe "release/MAC-Address-Manager-${GITHUB_REF_NAME}.exe"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: MAC地址管理器 ${{ github.ref_name }}
-          files: |
-            release/MAC-Address-Manager-${{ github.ref_name }}.exe
-            release/MAC-Address-Manager-${{ github.ref_name }}.zip
+          name: MAC地址管理器_${{ github.ref_name }}
+          files: release/MAC-Address-Manager-${{ github.ref_name }}.exe
           fail_on_unmatched_files: true
           body: |
-            ## 下载
+            Windows 10/11 x64 单文件版。GitHub Releases 不支持中文资源文件名；资源显示名称为 MAC地址管理器_版本号.exe，实际下载文件名为 MAC-Address-Manager-版本号.exe。支持托盘常驻、开机自启、地址漂移自动修复和 Wi-Fi 随机地址检测。
 
-            - `MAC-Address-Manager-版本号.exe`：Windows 10/11 x64 单文件版，可直接运行。
-            - `MAC-Address-Manager-版本号.zip`：解压后得到中文文件名 `MAC地址管理器-版本号.exe`。
-
-            GitHub Releases 会重写中文资源名，因此直接下载的 EXE 使用英文名；需要中文文件名时请使用 ZIP。
+      - name: Set Chinese asset label
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          asset_id=$(gh api "repos/${{ github.repository }}/releases/tags/${{ github.ref_name }}" --jq '.assets[] | select(.name | endswith(".exe")) | .id' | head -n 1)
+          if [ -n "$asset_id" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/releases/assets/$asset_id" -f "label=MAC地址管理器_${{ github.ref_name }}.exe"
+          fi
 
             ## 说明
 
