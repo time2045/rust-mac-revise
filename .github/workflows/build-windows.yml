@@ -78,9 +78,15 @@ jobs:
           name: mac-address-manager-windows-x64
           path: release
 
-      - name: Rename release asset
+      - name: Prepare release files
         shell: bash
-        run: mv release/mac-address-manager.exe "release/MAC地址管理器-${GITHUB_REF_NAME}.exe"
+        run: |
+          set -e
+          mkdir -p release/package
+          cp release/mac-address-manager.exe "release/package/MAC地址管理器-${GITHUB_REF_NAME}.exe"
+          cp release/mac-address-manager.exe "release/MAC-Address-Manager-${GITHUB_REF_NAME}.exe"
+          (cd release/package && zip -q "../MAC-Address-Manager-${GITHUB_REF_NAME}.zip" *.exe)
+          rm -rf release/package release/mac-address-manager.exe
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -88,12 +94,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           name: MAC地址管理器 ${{ github.ref_name }}
-          files: release/MAC地址管理器-${{ github.ref_name }}.exe
+          files: |
+            release/MAC-Address-Manager-${{ github.ref_name }}.exe
+            release/MAC-Address-Manager-${{ github.ref_name }}.zip
           fail_on_unmatched_files: true
           body: |
             ## 下载
 
-            - `MAC地址管理器-版本号.exe`：Windows 10/11 x64 单文件版，无需安装。
+            - `MAC-Address-Manager-版本号.exe`：Windows 10/11 x64 单文件版，可直接运行。
+            - `MAC-Address-Manager-版本号.zip`：解压后得到中文文件名 `MAC地址管理器-版本号.exe`。
+
+            GitHub Releases 会重写中文资源名，因此直接下载的 EXE 使用英文名；需要中文文件名时请使用 ZIP。
 
             ## 说明
 
