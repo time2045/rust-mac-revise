@@ -30,6 +30,8 @@ const state = {
   autoRepairAttempts: new Map(),
   autoRepairRunning: false,
   autoRepairTimer: null,
+  wifiChecks: new Map(),
+  wifiChecking: new Set(),
 };
 const pageTitles = {
   adapters: "网卡管理",
@@ -258,6 +260,7 @@ async function fetchSnapshot() {
   renderAll();
 }
 async function refresh(manual = false) {
+  if (manual) state.wifiChecks.clear();
   const result = await execute(manual ? "刷新" : "读取快照", async () => {
     await fetchSnapshot();
     if (manual) toast("已刷新。", "info");
@@ -408,12 +411,50 @@ function renderDetails() {
     text("drift-title", adapter.mac ? "地址与目标不一致" : "待验证地址");
     text("drift-message", `目标 ${displayMac(expectedMac(adapter))}。`);
   }
+  renderWifiRandom(adapter);
   // Drafts belong to an adapter, not a snapshot. Polling must never replace typed text.
   const value = draft()?.value || "";
   if ($("mac-input").value !== value) $("mac-input").value = value;
   renderProfileChooser();
   renderValidation();
   renderControls();
+}
+function showWifiRandom(report) {
+  const enabled = (report?.profiles || []).filter((profile) => profile.randomization && profile.ssid);
+  if (!enabled.length) {
+    shown("wifi-random-banner", false);
+    return;
+  }
+  const current = report.current_ssid ? enabled.find((profile) => profile.ssid === report.current_ssid) : null;
+  const names = enabled.map((profile) => profile.ssid);
+  const suffix = names.length > 3 ? " 等" : "";
+  text("wifi-random-message", current
+    ? `当前网络 ${current.ssid} 已启用随机硬件地址。`
+    : `已保存网络 ${names.slice(0, 3).join("、")}${suffix} 启用了随机硬件地址。`);
+  shown("wifi-random-banner", true);
+}
+function renderWifiRandom(adapter) {
+  if (!adapter || !adapter.hardware || !isWifi(adapter)) {
+    shown("wifi-random-banner", false);
+    return;
+  }
+  const cached = state.wifiChecks.get(adapter.guid);
+  if (cached) {
+    showWifiRandom(cached);
+    return;
+  }
+  shown("wifi-random-banner", false);
+  if (state.wifiChecking.has(adapter.guid)) return;
+  state.wifiChecking.add(adapter.guid);
+  invoke("wifi_randomization", { guid: adapter.guid })
+    .then((report) => {
+      state.wifiChecks.set(adapter.guid, report);
+      if (state.selectedGuid === adapter.guid) showWifiRandom(report);
+    })
+    .catch(() => {
+      if (state.selectedGuid === adapter.guid) shown("wifi-random-banner", false);
+    })
+    .finally(() => state.wifiChecking.delete(adapter.guid));
 }
 function renderValidation() {
   const validation = validateMac(draft()?.value || "");
@@ -521,6 +562,7 @@ function renderSettings() {
     $("monitor-input").checked = settings.monitor !== false;
     $("interval-input").value = String([30, 60, 120].includes(settings.interval_seconds) ? settings.interval_seconds : 60);
   }
+  $("autostart-input").checked = Boolean(state.snapshot?.autostart);
   text("settings-state", state.settingsDirty ? "未保存" : settings ? "已保存" : "程序运行时生效");
   text("data-directory", state.snapshot?.data_dir);
 }
@@ -583,8 +625,9 @@ function renderControls() {
   $("recover-button").disabled = !state.snapshot?.store.pending || Boolean(writeReason(recoveryAdapter(), true));
   $("recover-button").title = writeReason(recoveryAdapter(), true) || "恢复日志记录的上次配置";
   for (const id of ["import-button", "export-button"]) $(id).disabled = busy || !writable;
-  for (const id of ["open-data-button", "open-wifi-button"]) $(id).disabled = busy || !ready;
+  for (const id of ["open-data-button", "open-wifi-button", "wifi-random-settings"]) $(id).disabled = busy || !ready;
   for (const id of ["open-repo", "open-releases"]) $(id).disabled = busy || !state.appInfo;
+  $("autostart-input").disabled = busy || !ready;
   $("monitor-input").disabled = busy || !writable;
   $("interval-input").disabled = busy || !writable || !$("monitor-input").checked;
   $("save-settings-button").disabled = busy || !writable || !state.settingsDirty;
@@ -942,6 +985,22 @@ $("open-wifi-button").addEventListener("click", () => execute("打开 Wi-Fi 设�
   await invoke("open_wifi_settings");
   toast(isDemo ? "演示环境。" : "已打开 Wi-Fi 设置。", "info");
 }));
+$("wifi-random-settings").addEventListener("click", () => execute("打开 Wi-Fi 设置", async () => {
+  await invoke("open_wifi_settings");
+  toast(isDemo ? "演示环境。" : "已打开 Wi-Fi 设置。", "info");
+}));
+$("autostart-input").addEventListener("change", async (event) => {
+  if (state.inFlight) return;
+  const enabled = event.target.checked;
+  const result = await execute(enabled ? "启用开机自启" : "关闭开机自启", async () => {
+    const actual = await invoke("set_autostart", { enabled });
+    if (state.snapshot) state.snapshot.autostart = Boolean(actual);
+    toast(actual ? "已启用开机自启。" : "已关闭开机自启。", "info");
+  });
+  if (!result.ok) event.target.checked = !enabled;
+  renderSettings();
+  renderControls();
+});
 $("open-data-button").addEventListener("click", () => execute("打开数据目录", async () => {
   await invoke("open_data_folder");
   toast(isDemo ? "演示环境。" : "已打开数据目录。", "info");
@@ -966,6 +1025,7 @@ if (demo) {
     state.recoveryLatch = false;
     state.lastRead = null;
     state.historyPage = 1;
+    state.wifiChecks.clear();
     for (const id of ["adapter-search", "profile-search", "history-search"]) $(id).value = "";
     $("include-virtual").checked = false;
     shown("error-banner", false);

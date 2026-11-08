@@ -78,25 +78,32 @@ jobs:
           name: mac-address-manager-windows-x64
           path: release
 
+      - name: Rename release asset
+        shell: bash
+        run: mv release/mac-address-manager.exe "release/MAC地址管理器-${GITHUB_REF_NAME}.exe"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: ${{ github.ref_name }}
-          files: release/mac-address-manager.exe
+          name: MAC地址管理器 ${{ github.ref_name }}
+          files: release/MAC地址管理器-${{ github.ref_name }}.exe
           fail_on_unmatched_files: true
           body: |
             ## 下载
 
-            - `mac-address-manager.exe`：Windows 10/11 x64 单文件版，无需安装。
+            - `MAC地址管理器-版本号.exe`：Windows 10/11 x64 单文件版，无需安装。
 
             ## 说明
 
             - 单个 EXE，不依赖旁加载的 `WebView2Loader.dll`。
             - 默认窗口 1000×700 居中，紧凑布局，页面无横向滚动条。
             - 侧栏权限状态更简洁，管理员状态下不再显示重复的提权按钮。
+            - 关闭窗口后驻留系统托盘，可从托盘显示窗口或退出。
+            - 支持开机自启，启动时驻留托盘；在设置中随时关闭。
             - 可选按网卡启用地址漂移自动修复；仅在程序运行期间生效。
+            - 检测已保存 Wi-Fi 网络的随机硬件地址并提示，不修改系统设置。
             - 关于页包含版本号、GitHub 仓库和发行版入口。
             - 修改网卡需要管理员权限；部分 Intel Wi-Fi 驱动可能不支持任意 MAC。
             - 系统需 WebView2 Runtime；如提示缺少 `VCRUNTIME140.dll`，请安装 Microsoft Visual C++ 2015-2022 Redistributable（x64）。

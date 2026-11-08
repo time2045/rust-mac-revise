@@ -88,6 +88,7 @@ export function createDemoBackend(search = "") {
       adapters: sampleAdapters(),
       store: initialStore(),
       admin: scenario !== "readonly",
+      autostart: false,
       data_dir: "演示数据 · 仅在内存中，没有磁盘目录",
       store_warning: null,
     };
@@ -251,9 +252,15 @@ export function createDemoBackend(search = "") {
       return snapshot.store;
     },
     app_info() {
-      return { version: "0.2.1", repository: "https://github.com/time2045/rust-mac-revise", releases: "https://github.com/time2045/rust-mac-revise/releases/latest" };
+      return { version: "0.3.0", repository: "https://github.com/time2045/rust-mac-revise", releases: "https://github.com/time2045/rust-mac-revise/releases/latest" };
     },
     open_project_page() { return null; },
+    set_autostart({ enabled }) { snapshot.autostart = Boolean(enabled); return snapshot.autostart; },
+    wifi_randomization({ guid }) {
+      const adapter = getAdapter(guid);
+      if (!/wi-?fi|wireless|无线/i.test(`${adapter.name} ${adapter.description}`)) return { profiles: [], current_ssid: null, unreadable: 0 };
+      return { profiles: [{ ssid: "演示网络", randomization: true }], current_ssid: "演示网络", unreadable: 0 };
+    },
     apply_mac({ guid, mac }) { return write(guid, mac, "apply"); },
     auto_repair_mac({ guid, mac }) { return write(guid, mac, "auto_repair"); },
     restore_mac({ guid }) { return write(guid, null, "restore"); },

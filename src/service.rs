@@ -38,6 +38,7 @@ impl<B: Backend> Service<B> {
             adapters: self.backend.list()?,
             store: store.data.clone(),
             admin: self.backend.is_admin(),
+            autostart: self.backend.is_autostart_enabled(),
             data_dir: store.dir.to_string_lossy().into(),
             store_warning: store.warning.clone(),
         })
@@ -102,6 +103,10 @@ impl<B: Backend> Service<B> {
         next.settings.interval_seconds = settings.interval_seconds;
         store.commit(next)?;
         Ok(store.data.clone())
+    }
+
+    pub fn set_autostart(&self, enabled: bool) -> AppResult<bool> {
+        self.backend.set_autostart(enabled)
     }
 
     pub fn set_auto_repair(&self, guid: &str, enabled: bool) -> AppResult<Store> {
@@ -432,7 +437,7 @@ fn upsert_profile(
 mod tests {
     use super::*;
     use crate::platform::RestartFailure;
-    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
     const GUID: &str = "11111111-1111-4111-8111-111111111111";
     const ORIGINAL: &str = "74-13-EA-BD-FF-83";
@@ -444,6 +449,7 @@ mod tests {
         admin: bool,
         rejects: bool,
         timeout: bool,
+        autostart: AtomicBool,
         restart_count: AtomicUsize,
     }
 
@@ -468,6 +474,7 @@ mod tests {
                 admin: true,
                 rejects: false,
                 timeout: false,
+                autostart: AtomicBool::new(false),
                 restart_count: AtomicUsize::new(0),
             }
         }
@@ -482,6 +489,13 @@ mod tests {
         }
         fn is_admin(&self) -> bool {
             self.admin
+        }
+        fn is_autostart_enabled(&self) -> bool {
+            self.autostart.load(Ordering::SeqCst)
+        }
+        fn set_autostart(&self, enabled: bool) -> AppResult<bool> {
+            self.autostart.store(enabled, Ordering::SeqCst);
+            Ok(enabled)
         }
         fn read_override(&self, _: &Adapter) -> AppResult<Option<Override>> {
             Ok(self.value.lock().unwrap().clone())
@@ -776,6 +790,17 @@ mod tests {
             .settings
             .auto_repair
             .contains_key(GUID));
+        cleanup(&s);
+    }
+
+    #[test]
+    fn autostart_preference_roundtrip() {
+        let s = service(FakeBackend::new());
+        assert!(!s.snapshot().unwrap().autostart);
+        assert!(s.set_autostart(true).unwrap());
+        assert!(s.snapshot().unwrap().autostart);
+        assert!(!s.set_autostart(false).unwrap());
+        assert!(!s.snapshot().unwrap().autostart);
         cleanup(&s);
     }
 

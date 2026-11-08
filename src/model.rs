@@ -242,6 +242,7 @@ pub struct Snapshot {
     pub adapters: Vec<Adapter>,
     pub store: Store,
     pub admin: bool,
+    pub autostart: bool,
     pub data_dir: String,
     pub store_warning: Option<String>,
 }

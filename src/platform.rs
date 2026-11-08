@@ -1,5 +1,5 @@
 use crate::model::{normalize_guid, normalize_mac, Adapter, AppResult, Override};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
     fs::{self, File, OpenOptions},
     io::Read,
@@ -14,7 +14,7 @@ use windows_sys::Win32::UI::{
     WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK, SW_SHOWNORMAL},
 };
 use winreg::{
-    enums::{HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE, REG_SZ},
+    enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE, REG_SZ},
     RegKey, RegValue,
 };
 
@@ -43,6 +43,8 @@ pub trait Backend: Send + Sync {
     fn lock_mutation(&self) -> AppResult<MutationLock>;
     fn list(&self) -> AppResult<Vec<Adapter>>;
     fn is_admin(&self) -> bool;
+    fn is_autostart_enabled(&self) -> bool;
+    fn set_autostart(&self, enabled: bool) -> AppResult<bool>;
     fn read_override(&self, adapter: &Adapter) -> AppResult<Option<Override>>;
     fn write_override(&self, adapter: &Adapter, value: Option<&Override>) -> AppResult<()>;
     fn restart(&self, guid: &str) -> Result<(), RestartFailure>;
@@ -144,6 +146,14 @@ impl Backend for WindowsBackend {
 
     fn is_admin(&self) -> bool {
         is_admin()
+    }
+
+    fn is_autostart_enabled(&self) -> bool {
+        is_autostart_enabled()
+    }
+
+    fn set_autostart(&self, enabled: bool) -> AppResult<bool> {
+        set_autostart(enabled)
     }
 
     fn read_override(&self, adapter: &Adapter) -> AppResult<Option<Override>> {
@@ -376,6 +386,64 @@ pub fn is_admin() -> bool {
     unsafe { IsUserAnAdmin() != 0 }
 }
 
+const AUTOSTART_KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
+const AUTOSTART_NAME: &str = "MacAddressManager";
+
+pub fn is_autostart_enabled() -> bool {
+    RegKey::predef(HKEY_CURRENT_USER)
+        .open_subkey_with_flags(AUTOSTART_KEY, KEY_READ)
+        .and_then(|key| key.get_value::<String, _>(AUTOSTART_NAME))
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false)
+}
+
+pub fn set_autostart(enabled: bool) -> AppResult<bool> {
+    let key = RegKey::predef(HKEY_CURRENT_USER)
+        .create_subkey(AUTOSTART_KEY)
+        .map_err(|e| format!("无法打开开机自启配置：{e}"))?
+        .0;
+    if enabled {
+        let exe = std::env::current_exe().map_err(|e| format!("无法定位程序路径：{e}"))?;
+        let exe = exe
+            .to_str()
+            .ok_or_else(|| "程序路径包含无法保存的字符".to_string())?;
+        let command = format!("\"{exe}\" --tray");
+        key.set_value(AUTOSTART_NAME, &command)
+            .map_err(|e| format!("无法写入开机自启配置：{e}"))?;
+    } else {
+        match key.delete_value(AUTOSTART_NAME) {
+            Ok(()) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(format!("无法移除开机自启配置：{error}")),
+        }
+    }
+    Ok(is_autostart_enabled())
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct WifiProfile {
+    pub ssid: String,
+    pub randomization: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct WifiReport {
+    #[serde(default)]
+    pub profiles: Vec<WifiProfile>,
+    #[serde(default)]
+    pub current_ssid: Option<String>,
+    #[serde(default)]
+    pub unreadable: u32,
+}
+
+pub fn wifi_randomization(guid: &str) -> AppResult<WifiReport> {
+    let guid = normalize_guid(guid)?;
+    let script = include_str!("wifi.ps1").replace("__GUID__", &guid);
+    let output = powershell(&script, Duration::from_secs(30)).map_err(|error| error.message)?;
+    serde_json::from_str(output.trim_start_matches('\u{feff}').trim())
+        .map_err(|e| format!("无法解析 Wi-Fi 随机地址信息：{e}"))
+}
+
 fn wide(value: &std::ffi::OsStr) -> Vec<u16> {
     value.encode_wide().chain(Some(0)).collect()
 }
@@ -465,6 +533,17 @@ pub fn lock_instance(dir: &Path) -> AppResult<File> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn wifi_report_json_parses() {
+        let report: WifiReport = serde_json::from_str(
+            r#"{"profiles":[{"ssid":"Home","randomization":true}],"current_ssid":"Home","unreadable":1}"#,
+        )
+        .unwrap();
+        assert_eq!(report.current_ssid.as_deref(), Some("Home"));
+        assert_eq!(report.unreadable, 1);
+        assert!(report.profiles[0].randomization);
+    }
+
     #[test]
     fn registry_encoding_roundtrip() {
         let raw = override_from_mac("02-AB-CD-EF-12-34");

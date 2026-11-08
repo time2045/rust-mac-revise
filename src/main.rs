@@ -4,11 +4,12 @@ mod model;
 mod platform;
 mod service;
 mod store;
+mod tray;
 
 use model::{AppResult, OperationResult, Settings, Snapshot, Store};
 use service::Service;
 use std::sync::Arc;
-use tauri::State;
+use tauri::{Manager, State};
 
 type AppState = Arc<Service<platform::WindowsBackend>>;
 
@@ -79,6 +80,20 @@ async fn set_auto_repair(
     enabled: bool,
 ) -> AppResult<Store> {
     blocking(state, move |s| s.set_auto_repair(&guid, enabled)).await
+}
+
+#[tauri::command]
+async fn set_autostart(state: State<'_, AppState>, enabled: bool) -> AppResult<bool> {
+    let actual = blocking(state, move |s| s.set_autostart(enabled)).await?;
+    tray::sync_autostart(actual);
+    Ok(actual)
+}
+
+#[tauri::command]
+async fn wifi_randomization(guid: String) -> AppResult<platform::WifiReport> {
+    tauri::async_runtime::spawn_blocking(move || platform::wifi_randomization(&guid))
+        .await
+        .map_err(|error| format!("后台任务失败：{error}"))?
 }
 
 #[tauri::command]
@@ -173,8 +188,29 @@ fn run() -> AppResult<()> {
         store::Persistence::load(dir),
     ));
     tauri::Builder::default()
+        .setup(|app| {
+            if let Err(error) = tray::setup(app.handle()) {
+                platform::show_error(&error);
+            }
+            if std::env::args().any(|arg| arg == "--tray") && tray::is_ready() {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.hide();
+                }
+            }
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if tray::is_ready() && !tray::is_exiting() {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .manage(state)
         .invoke_handler(tauri::generate_handler![
+            set_autostart,
+            wifi_randomization,
             get_snapshot,
             random_mac,
             save_profile,
