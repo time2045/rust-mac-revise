@@ -83,6 +83,11 @@ async fn set_auto_repair(
 }
 
 #[tauri::command]
+async fn clear_history(state: State<'_, AppState>) -> AppResult<Store> {
+    blocking(state, Service::clear_history).await
+}
+
+#[tauri::command]
 async fn set_autostart(state: State<'_, AppState>, enabled: bool) -> AppResult<bool> {
     let actual = blocking(state, move |s| s.set_autostart(enabled)).await?;
     tray::sync_autostart(actual);
@@ -218,6 +223,7 @@ fn run() -> AppResult<()> {
             import_profiles,
             export_profiles,
             save_settings,
+            clear_history,
             set_auto_repair,
             app_info,
             open_project_page,

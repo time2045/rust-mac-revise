@@ -93,7 +93,7 @@ jobs:
           files: release/MAC-Address-Manager-${{ github.ref_name }}.exe
           fail_on_unmatched_files: true
           body: |
-            Windows 10/11 x64 单文件版。GitHub Releases 不支持中文资源文件名；资源显示名称为 MAC地址管理器_版本号.exe，实际下载文件名为 MAC-Address-Manager-版本号.exe。支持托盘常驻、开机自启、地址漂移自动修复和 Wi-Fi 随机地址检测。
+            Windows 10/11 x64 单文件版。GitHub Releases 不支持中文资源文件名；资源显示名称为 MAC地址管理器_版本号.exe，实际下载文件名为 MAC-Address-Manager-版本号.exe。支持地址方案一键应用、清空操作记录、托盘常驻、开机自启、地址漂移自动修复和 Wi-Fi 随机地址检测。
 
       - name: Set Chinese asset label
         shell: bash

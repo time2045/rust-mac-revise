@@ -109,6 +109,15 @@ impl<B: Backend> Service<B> {
         self.backend.set_autostart(enabled)
     }
 
+    pub fn clear_history(&self) -> AppResult<Store> {
+        let mut store = self.lock()?;
+        store.ensure_writable()?;
+        let mut next = store.data.clone();
+        next.history.clear();
+        store.commit(next)?;
+        Ok(store.data.clone())
+    }
+
     pub fn set_auto_repair(&self, guid: &str, enabled: bool) -> AppResult<Store> {
         let guid = normalize_guid(guid)?;
         let mut store = self.lock()?;
@@ -790,6 +799,23 @@ mod tests {
             .settings
             .auto_repair
             .contains_key(GUID));
+        cleanup(&s);
+    }
+
+    #[test]
+    fn clear_history_keeps_profiles_and_expectations() {
+        let s = service(FakeBackend::new());
+        s.apply(GUID, Some(TARGET)).unwrap();
+        s.save_profile("办公", TARGET, Some(GUID)).unwrap();
+        assert_eq!(s.snapshot().unwrap().store.history.len(), 1);
+        let store = s.clear_history().unwrap();
+        assert!(store.history.is_empty());
+        assert_eq!(store.profiles.len(), 1);
+        assert_eq!(store.expectations[GUID], TARGET);
+        assert!(Persistence::load(s.data_dir().unwrap())
+            .data
+            .history
+            .is_empty());
         cleanup(&s);
     }
 

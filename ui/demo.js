@@ -238,6 +238,7 @@ export function createDemoBackend(search = "") {
     },
     import_profiles({ content }) { return importProfiles(content); },
     export_profiles() { return JSON.stringify({ version: 1, profiles: snapshot.store.profiles }, null, 2); },
+    clear_history() { snapshot.store.history = []; return snapshot.store; },
     save_settings({ settings }) {
       if (!settings || typeof settings.monitor !== "boolean" || ![30, 60, 120].includes(settings.interval_seconds)) throw new Error("检测设置无效。");
       snapshot.store.settings.monitor = settings.monitor;
@@ -252,7 +253,7 @@ export function createDemoBackend(search = "") {
       return snapshot.store;
     },
     app_info() {
-      return { version: "0.3.0", repository: "https://github.com/time2045/rust-mac-revise", releases: "https://github.com/time2045/rust-mac-revise/releases/latest" };
+      return { version: "0.3.1", repository: "https://github.com/time2045/rust-mac-revise", releases: "https://github.com/time2045/rust-mac-revise/releases/latest" };
     },
     open_project_page() { return null; },
     set_autostart({ enabled }) { snapshot.autostart = Boolean(enabled); return snapshot.autostart; },

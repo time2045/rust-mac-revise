@@ -477,6 +477,22 @@ function renderProfileChooser() {
   select.replaceChildren(fragment);
   if (Array.from(select.options).some((option) => option.value === previous)) select.value = previous;
 }
+function profileTarget(profile) {
+  if (!state.snapshot) return null;
+  const guid = profile.adapter_guid || state.selectedGuid;
+  return state.snapshot.adapters.find((adapter) => adapter.guid === guid) || null;
+}
+function profileApplyReason(profile) {
+  if (!state.snapshot) return "请先读取网卡。";
+  if (state.snapshot.store_warning) return "数据文件异常。";
+  if (!state.snapshot.admin) return "需要管理员权限。";
+  if (state.snapshot.store.pending || state.recoveryLatch) return "请先恢复配置。";
+  if (state.uncertain) return "系统状态未确认，请刷新。";
+  const adapter = profileTarget(profile);
+  if (!adapter) return profile.adapter_guid ? "方案绑定的网卡不可用。" : "请先选择网卡。";
+  if (!adapter.can_configure) return "网卡不可配置。";
+  return "";
+}
 function profileAdapterName(profile) {
   if (!profile.adapter_guid) return "不限网卡";
   return state.snapshot?.adapters.find((adapter) => adapter.guid === profile.adapter_guid)?.name || `设备未连接 · ${profile.adapter_guid}`;
@@ -507,7 +523,7 @@ function renderProfiles() {
     const meta = element("div", "profile-meta");
     meta.append(element("span", "", profileAdapterName(profile)), element("span", "", `创建于 ${formatTime(profile.created_at)}`));
     const actions = element("div", "profile-card-actions");
-    actions.append(actionButton("copy", profile.id, "复制", "copy"), actionButton("load", profile.id, "载入", "arrow"), actionButton("delete", profile.id, "删除", "trash", "danger-outline"));
+    actions.append(actionButton("apply", profile.id, "应用", "shield", "primary"), actionButton("copy", profile.id, "复制", "copy"), actionButton("load", profile.id, "载入", "arrow"), actionButton("delete", profile.id, "删除", "trash", "danger-outline"));
     for (const button of actions.children) button.setAttribute("aria-label", `${button.textContent}方案「${profile.name}」`);
     card.append(header, element("span", "mac", displayMac(profile.mac)), meta, actions);
     fragment.append(card);
@@ -621,19 +637,28 @@ function renderControls() {
   $("save-profile-button").disabled = busy || !writable || !adapter || !validation.valid;
   $("profile-select").disabled = busy || !ready || !state.snapshot.store.profiles.length;
   $("load-profile-button").disabled = busy || !$("profile-select").value;
+  const selectedProfile = state.snapshot?.store.profiles.find((profile) => profile.id === $("profile-select").value);
+  $("apply-profile-button").disabled = busy || !selectedProfile || Boolean(selectedProfile && profileApplyReason(selectedProfile));
+  $("apply-profile-button").title = selectedProfile ? (profileApplyReason(selectedProfile) || "应用该方案") : "选择方案";
   $("load-expectation").disabled = busy || !expectedMac(adapter);
   $("recover-button").disabled = !state.snapshot?.store.pending || Boolean(writeReason(recoveryAdapter(), true));
   $("recover-button").title = writeReason(recoveryAdapter(), true) || "恢复日志记录的上次配置";
   for (const id of ["import-button", "export-button"]) $(id).disabled = busy || !writable;
   for (const id of ["open-data-button", "open-wifi-button", "wifi-random-settings"]) $(id).disabled = busy || !ready;
   for (const id of ["open-repo", "open-releases"]) $(id).disabled = busy || !state.appInfo;
+  $("clear-history-button").disabled = busy || !ready || !state.snapshot.store.history.length || Boolean(state.snapshot.store_warning);
   $("autostart-input").disabled = busy || !ready;
   $("monitor-input").disabled = busy || !writable;
   $("interval-input").disabled = busy || !writable || !$("monitor-input").checked;
   $("save-settings-button").disabled = busy || !writable || !state.settingsDirty;
   $("demo-scenario").disabled = busy;
   for (const id of ["profile-name", "bind-profile", "save-confirm", "save-cancel"]) $(id).disabled = busy;
-  for (const button of $("profile-list").querySelectorAll("button[data-action]")) button.disabled = busy || (!writable && button.dataset.action === "delete");
+  for (const button of $("profile-list").querySelectorAll("button[data-action]")) {
+    const profile = state.snapshot?.store.profiles.find((item) => item.id === button.dataset.id);
+    const applyReason = profile ? profileApplyReason(profile) : "方案不可用";
+    button.disabled = busy || (!writable && button.dataset.action === "delete") || (button.dataset.action === "apply" && Boolean(applyReason));
+    if (button.dataset.action === "apply") button.title = applyReason || "应用该方案";
+  }
   text("write-reason", reason || (adapter && !adapter.admin_enabled ? "网卡已禁用，写入后保持禁用。" : "应用时可能短暂断网。"));
   $("main-content").setAttribute("aria-busy", String(busy));
   text("busy-status", busy ? "处理中…" : isDemo ? "演示" : "就绪");
@@ -773,6 +798,55 @@ async function loadProfile(id) {
   if (!guid) { showError("请先选择网卡。"); return; }
   await setTarget(guid, profile.mac, `方案「${profile.name}」`);
 }
+async function applyProfile(profile) {
+  if (state.inFlight) return;
+  const reason = profileApplyReason(profile);
+  if (reason) { showError(reason); return; }
+  const adapter = profileTarget(profile);
+  if (!adapter) { showError("目标网卡不可用。"); return; }
+  const validation = validateMac(profile.mac);
+  if (!validation.valid) { showError(validation.message); return; }
+  const confirmed = await confirmAction({
+    title: `应用方案「${profile.name}」？`,
+    description: "将载入方案并写入所选网卡，网络可能短暂中断。",
+    details: [["网卡", adapter.name || adapter.guid], ["当前地址", displayMac(adapter.mac)], ["目标地址", validation.mac], ["来源", `方案「${profile.name}」`], ["设备状态", adapter.admin_enabled ? "已启用" : "已禁用，保持禁用"]],
+    warnings: nicWarnings,
+    accept: "应用",
+  });
+  if (!confirmed) return;
+  const latest = state.snapshot?.adapters.find((item) => item.guid === adapter.guid);
+  const freshReason = writeReason(latest);
+  if (freshReason) { showError(freshReason); return; }
+  state.selectedGuid = adapter.guid;
+  state.drafts.set(adapter.guid, { value: validation.mac, dirty: false });
+  await execute("应用方案", async () => {
+    state.uncertain = true;
+    let result;
+    let commandError;
+    let snapshotError;
+    try {
+      result = await invoke("apply_mac", { guid: adapter.guid, mac: validation.mac });
+      if (!result || !hasOwn(outcomeLabels, result.outcome)) throw new Error("写入返回了未知结果，必须刷新确认系统状态。");
+    } catch (error) {
+      commandError = error;
+    }
+    try {
+      await fetchSnapshot();
+    } catch (error) {
+      snapshotError = error;
+    }
+    if (result?.outcome === "recovery_required") state.recoveryLatch = true;
+    if (snapshotError) state.uncertain = true;
+    renderGlobal();
+    if (result && hasOwn(outcomeLabels, result.outcome)) operationResult(result);
+    if (commandError || snapshotError) {
+      const messages = [];
+      if (commandError) messages.push(errorText(commandError));
+      if (snapshotError) messages.push(`操作后刷新失败：${errorText(snapshotError)}。已暂停新的网卡写入。`);
+      throw new Error(messages.join("\n"));
+    }
+  });
+}
 function openSaveDialog() {
   const adapter = currentAdapter();
   const validation = validateMac(draft()?.value || "");
@@ -886,6 +960,10 @@ for (const [id, page] of [["open-repo", "repo"], ["open-releases", "releases"]])
 }
 $("profile-select").addEventListener("change", renderControls);
 $("load-profile-button").addEventListener("click", () => loadProfile($("profile-select").value));
+$("apply-profile-button").addEventListener("click", () => {
+  const profile = state.snapshot?.store.profiles.find((item) => item.id === $("profile-select").value);
+  if (profile) applyProfile(profile);
+});
 $("save-profile-button").addEventListener("click", openSaveDialog);
 $("save-cancel").addEventListener("click", () => $("save-dialog").close("cancel"));
 $("save-dialog").addEventListener("cancel", (event) => { if (state.inFlight) event.preventDefault(); });
@@ -917,7 +995,8 @@ $("profile-list").addEventListener("click", async (event) => {
   if (!button || state.inFlight) return;
   const profile = state.snapshot?.store.profiles.find((item) => item.id === button.dataset.id);
   if (!profile) { showError("方案不存在，请刷新。"); return; }
-  if (button.dataset.action === "copy") await copyProfile(profile);
+  if (button.dataset.action === "apply") await applyProfile(profile);
+  else if (button.dataset.action === "copy") await copyProfile(profile);
   else if (button.dataset.action === "load") await loadProfile(profile.id);
   else if (button.dataset.action === "delete") await deleteProfile(profile);
 });
@@ -952,6 +1031,22 @@ $("export-button").addEventListener("click", () => execute("导出方案", async
   toast("已生成 JSON 文件并请求下载。", "info");
 }));
 $("history-search").addEventListener("input", () => { state.historyPage = 1; renderHistory(); });
+$("clear-history-button").addEventListener("click", async () => {
+  if (state.inFlight) return;
+  const count = state.snapshot?.store.history.length || 0;
+  if (!count) return;
+  const confirmed = await confirmAction({
+    title: "清空操作记录？",
+    description: "只删除历史记录，不影响网卡配置。",
+    details: [["记录数", `${count} 条`]],
+    accept: "清空",
+  });
+  if (!confirmed) return;
+  await execute("清空记录", async () => {
+    acceptStore(await invoke("clear_history"));
+    toast("操作记录已清空。", "info");
+  });
+});
 $("history-size").addEventListener("change", () => { state.historyPage = 1; renderHistory(); });
 $("history-prev").addEventListener("click", () => { state.historyPage -= 1; renderHistory(); });
 $("history-next").addEventListener("click", () => { state.historyPage += 1; renderHistory(); });

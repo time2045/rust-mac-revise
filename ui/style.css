@@ -190,7 +190,7 @@ h3 { font-size: 13px; font-weight: 650; }
 .profile-card-header h3 { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .profile-card > .mac { display: block; font-size: 20px; padding: 3px 17px 14px; color: #3e5b5d; overflow-wrap: anywhere; }
 .profile-meta { padding: 0 17px 16px; display: flex; flex-direction: column; gap: 6px; color: #8a9699; font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
-.profile-card-actions { display: flex; align-items: center; gap: 8px; padding: 11px 17px; border-top: 1px solid #edf0f0; background: #fcfdfd; }
+.profile-card-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; padding: 11px 17px; border-top: 1px solid #edf0f0; background: #fcfdfd; }
 .profile-card-actions .danger-outline { margin-left: auto; }
 .history-panel { overflow: hidden; }
 .table-scroll { overflow-x: auto; }

@@ -1,6 +1,6 @@
 [package]
 name = "mac-address-manager"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 rust-version = "1.87"
 description = "Windows MAC 地址管理工具"

@@ -112,7 +112,7 @@
                     <span id="auto-repair-note" class="auto-repair-note">程序运行时生效</span>
                   </div>
                 </div>
-                <div class="profile-loader"><label for="profile-select">已存方案</label><div class="input-action"><select id="profile-select" disabled><option value="">选择方案</option></select><button id="load-profile-button" class="button" disabled>载入</button></div></div>
+                <div class="profile-loader"><label for="profile-select">已存方案</label><div class="input-action"><select id="profile-select" disabled><option value="">选择方案</option></select><button id="load-profile-button" class="button" disabled>载入</button><button id="apply-profile-button" class="button primary" disabled>应用</button></div></div>
               </div>
               <footer class="detail-footer"><span>移除注册表覆盖</span><button id="restore-button" class="button danger-outline" disabled>恢复默认</button></footer>
               <details class="device-identifiers"><summary>设备信息</summary><dl><dt>GUID</dt><dd id="adapter-guid">—</dd><dt>PNP ID</dt><dd id="adapter-pnp">—</dd></dl></details>
@@ -128,7 +128,7 @@
       </section>
 
       <section id="page-history" class="page-view" aria-label="操作记录" hidden>
-        <div class="section-toolbar wrap-toolbar"><label class="search-field toolbar-search"><svg class="icon"><use href="#i-search"/></svg><input id="history-search" type="search" placeholder="搜索网卡、地址、状态或消息" aria-label="搜索操作记录"></label><span id="history-summary" class="count-label">—</span></div>
+        <div class="section-toolbar wrap-toolbar"><label class="search-field toolbar-search"><svg class="icon"><use href="#i-search"/></svg><input id="history-search" type="search" placeholder="搜索网卡、地址、状态或消息" aria-label="搜索操作记录"></label><span id="history-summary" class="count-label">—</span><button id="clear-history-button" class="button danger-outline" disabled><svg class="icon"><use href="#i-trash"/></svg>清空</button></div>
         <div class="panel history-panel"><div class="table-scroll"><table><caption class="sr-only">网卡写入尝试，最新记录在前</caption><thead><tr><th scope="col">时间 / 网卡</th><th scope="col">操作</th><th scope="col">原地址</th><th scope="col">请求 / 实际地址</th><th scope="col">结果</th></tr></thead><tbody id="history-body"></tbody></table></div><div id="history-empty" class="empty-state" hidden><svg class="empty-icon"><use href="#i-history"/></svg><strong>暂无操作记录</strong><p>网卡写入尝试会记录在这里。</p></div><footer class="pagination"><label>每页 <select id="history-size" aria-label="每页记录数"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select> 条</label><div class="button-group"><button id="history-prev" class="button small" aria-label="上一页" disabled>上一页</button><span id="history-page" aria-live="polite">1 / 1</span><button id="history-next" class="button small" aria-label="下一页" disabled>下一页</button></div></footer></div>
       </section>
 
