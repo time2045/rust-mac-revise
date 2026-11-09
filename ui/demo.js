@@ -253,7 +253,7 @@ export function createDemoBackend(search = "") {
       return snapshot.store;
     },
     app_info() {
-      return { version: "0.3.1", repository: "https://github.com/time2045/rust-mac-revise", releases: "https://github.com/time2045/rust-mac-revise/releases/latest" };
+      return { version: "0.3.2", repository: "https://github.com/time2045/rust-mac-revise", releases: "https://github.com/time2045/rust-mac-revise/releases/latest" };
     },
     open_project_page() { return null; },
     set_autostart({ enabled }) { snapshot.autostart = Boolean(enabled); return snapshot.autostart; },
