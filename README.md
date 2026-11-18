@@ -2,9 +2,9 @@
 
 [![Windows Single EXE](https://github.com/time2045/rust-mac-revise/actions/workflows/build-windows.yml/badge.svg)](https://github.com/time2045/rust-mac-revise/actions/workflows/build-windows.yml)
 
-当前版本：v0.3.2 · [下载最新版](https://github.com/time2045/rust-mac-revise/releases/latest)
+当前版本：v0.3.3 · [下载最新版](https://github.com/time2045/rust-mac-revise/releases/latest)
 
-最近更新：v0.3.2 修复发布流程，功能与 v0.3.1 相同；v0.3.1 支持地址方案一键应用和清空操作记录；v0.3.0 增加托盘常驻、开机自启和 Wi-Fi 随机地址检测；v0.2.1 精简侧栏权限状态；v0.2.0 增加地址漂移自动修复与关于页。
+最近更新：v0.3.3 导入/导出改用系统文件对话框并显示导出路径；v0.3.2 修复发布流程；v0.3.1 支持地址方案一键应用和清空操作记录；v0.3.0 增加托盘常驻、开机自启和 Wi-Fi 随机地址检测；v0.2.0 增加地址漂移自动修复与关于页。
 
 面向 Windows 的网卡 MAC 地址管理工具，使用 Rust 1.87 + Tauri 2 构建。支持地址方案持久保存、应用前确认、写入后回读校验、失败自动回滚和地址漂移提醒。
 
@@ -50,6 +50,7 @@ GitHub Releases 会重写中文资源文件名，因此实际下载文件名使�
 
 - 枚举物理网卡和虚拟网卡，显示当前、永久和覆盖地址。
 - 保存、搜索、删除地址方案，支持绑定网卡和 JSON 导入/导出。
+- 导入/导出使用系统文件对话框；导出成功后显示实际保存路径。
 - 方案卡片、网卡详情均可一键应用，只需一次写入确认。
 - 操作记录支持搜索、分页和一键清空；清空只删除日志。
 - 应用前二次确认；写入后校验注册表配置和实际地址；失败自动回滚。

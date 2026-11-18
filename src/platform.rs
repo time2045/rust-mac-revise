@@ -1,17 +1,29 @@
 use crate::model::{normalize_guid, normalize_mac, Adapter, AppResult, Override};
 use serde::{Deserialize, Serialize};
 use std::{
+    ffi::OsString,
     fs::{self, File, OpenOptions},
     io::Read,
-    os::windows::{ffi::OsStrExt, fs::OpenOptionsExt, process::CommandExt},
+    os::windows::{
+        ffi::{OsStrExt, OsStringExt},
+        fs::OpenOptionsExt,
+        process::CommandExt,
+    },
     path::{Path, PathBuf},
     process::{Command, Stdio},
     thread,
     time::{Duration, Instant},
 };
-use windows_sys::Win32::UI::{
-    Shell::{IsUserAnAdmin, ShellExecuteW},
-    WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK, SW_SHOWNORMAL},
+use windows_sys::Win32::{
+    System::Com::{CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED},
+    UI::{
+        Controls::Dialogs::{
+            CommDlgExtendedError, GetOpenFileNameW, GetSaveFileNameW, OFN_FILEMUSTEXIST,
+            OFN_NOCHANGEDIR, OFN_OVERWRITEPROMPT, OFN_PATHMUSTEXIST, OPENFILENAMEW,
+        },
+        Shell::{IsUserAnAdmin, ShellExecuteW},
+        WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK, SW_SHOWNORMAL},
+    },
 };
 use winreg::{
     enums::{HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, KEY_READ, KEY_SET_VALUE, REG_SZ},
@@ -473,6 +485,87 @@ fn shell_open(verb: &str, target: &Path, arguments: Option<&str>) -> AppResult<(
 pub fn relaunch_admin() -> AppResult<()> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     shell_open("runas", &exe, Some("--elevated"))
+}
+
+fn json_file_dialog(save: bool, title: &str, default_name: &str) -> AppResult<Option<PathBuf>> {
+    let initialized =
+        unsafe { CoInitializeEx(std::ptr::null(), COINIT_APARTMENTTHREADED as u32) } >= 0;
+    let result = (|| {
+        let mut file = vec![0u16; 32768];
+        let default: Vec<u16> = default_name.encode_utf16().collect();
+        file[..default.len()].copy_from_slice(&default);
+        let filter: Vec<u16> = "JSON 文件\0*.json\0所有文件\0*.*\0\0"
+            .encode_utf16()
+            .collect();
+        let title: Vec<u16> = title.encode_utf16().chain(Some(0)).collect();
+        let extension: Vec<u16> = "json".encode_utf16().chain(Some(0)).collect();
+        let mut flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
+        if save {
+            flags |= OFN_OVERWRITEPROMPT;
+        } else {
+            flags |= OFN_FILEMUSTEXIST;
+        }
+        let mut settings = OPENFILENAMEW {
+            lStructSize: std::mem::size_of::<OPENFILENAMEW>() as u32,
+            hwndOwner: std::ptr::null_mut(),
+            hInstance: std::ptr::null_mut(),
+            lpstrFilter: filter.as_ptr(),
+            lpstrCustomFilter: std::ptr::null_mut(),
+            nMaxCustFilter: 0,
+            nFilterIndex: 1,
+            lpstrFile: file.as_mut_ptr(),
+            nMaxFile: file.len() as u32,
+            lpstrFileTitle: std::ptr::null_mut(),
+            nMaxFileTitle: 0,
+            lpstrInitialDir: std::ptr::null(),
+            lpstrTitle: title.as_ptr(),
+            Flags: flags,
+            nFileOffset: 0,
+            nFileExtension: 0,
+            lpstrDefExt: extension.as_ptr(),
+            lCustData: 0,
+            lpfnHook: None,
+            lpTemplateName: std::ptr::null(),
+            pvReserved: std::ptr::null_mut(),
+            dwReserved: 0,
+            FlagsEx: 0,
+        };
+        let accepted = unsafe {
+            if save {
+                GetSaveFileNameW(&mut settings)
+            } else {
+                GetOpenFileNameW(&mut settings)
+            }
+        };
+        if accepted == 0 {
+            let error = unsafe { CommDlgExtendedError() };
+            if error != 0 {
+                return Err(format!("文件对话框失败（错误 {error}）"));
+            }
+            return Ok(None);
+        }
+        let len = file.iter().position(|value| *value == 0).unwrap_or(0);
+        if len == 0 {
+            return Ok(None);
+        }
+        Ok(Some(PathBuf::from(OsString::from_wide(&file[..len]))))
+    })();
+    if initialized {
+        unsafe { CoUninitialize() };
+    }
+    result
+}
+
+pub fn choose_export_path() -> AppResult<Option<PathBuf>> {
+    let name = format!(
+        "MAC地址管理器-地址方案-{}.json",
+        chrono::Local::now().format("%Y%m%d")
+    );
+    json_file_dialog(true, "导出地址方案", &name)
+}
+
+pub fn choose_import_path() -> AppResult<Option<PathBuf>> {
+    json_file_dialog(false, "导入地址方案", "")
 }
 
 pub fn open_wifi_settings() -> AppResult<()> {

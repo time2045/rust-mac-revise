@@ -1000,7 +1000,20 @@ $("profile-list").addEventListener("click", async (event) => {
   else if (button.dataset.action === "load") await loadProfile(profile.id);
   else if (button.dataset.action === "delete") await deleteProfile(profile);
 });
-$("import-button").addEventListener("click", () => { if (!state.inFlight) $("import-file").click(); });
+$("import-button").addEventListener("click", () => {
+  if (state.inFlight) return;
+  if (isDemo) {
+    $("import-file").click();
+    return;
+  }
+  execute("导入方案", async () => {
+    const store = await invoke("import_profiles_from_file");
+    if (store) {
+      acceptStore(store);
+      toast("已导入。", "info");
+    }
+  });
+});
 $("import-file").addEventListener("change", async () => {
   const file = $("import-file").files?.[0];
   $("import-file").value = "";
@@ -1018,17 +1031,12 @@ $("import-file").addEventListener("change", async () => {
   });
 });
 $("export-button").addEventListener("click", () => execute("导出方案", async () => {
-  const content = await invoke("export_profiles");
-  if (typeof content !== "string") throw new Error("后端返回的导出内容不是 JSON 文本。");
-  JSON.parse(content);
-  const url = URL.createObjectURL(new Blob([content], { type: "application/json;charset=utf-8" }));
-  const link = element("a");
-  link.href = url;
-  link.download = "mac-address-profiles.json";
-  link.hidden = true;
-  document.body.append(link);
-  try { link.click(); } finally { link.remove(); window.setTimeout(() => URL.revokeObjectURL(url), 1000); }
-  toast("已生成 JSON 文件并请求下载。", "info");
+  if (isDemo) {
+    toast("演示环境不保存文件。", "info");
+    return;
+  }
+  const path = await invoke("export_profiles_to_file");
+  if (typeof path === "string" && path) toast(`已导出：${path}`, "info");
 }));
 $("history-search").addEventListener("input", () => { state.historyPage = 1; renderHistory(); });
 $("clear-history-button").addEventListener("click", async () => {

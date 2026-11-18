@@ -69,6 +69,37 @@ async fn export_profiles(state: State<'_, AppState>) -> AppResult<String> {
 }
 
 #[tauri::command]
+async fn export_profiles_to_file(state: State<'_, AppState>) -> AppResult<Option<String>> {
+    blocking(state, |service| {
+        let content = service.export_profiles()?;
+        let Some(path) = platform::choose_export_path()? else {
+            return Ok(None);
+        };
+        std::fs::write(&path, content).map_err(|error| format!("无法写入导出文件：{error}"))?;
+        Ok(Some(path.to_string_lossy().into_owned()))
+    })
+    .await
+}
+
+#[tauri::command]
+async fn import_profiles_from_file(state: State<'_, AppState>) -> AppResult<Option<Store>> {
+    blocking(state, |service| {
+        let Some(path) = platform::choose_import_path()? else {
+            return Ok(None);
+        };
+        let metadata =
+            std::fs::metadata(&path).map_err(|error| format!("无法读取导入文件：{error}"))?;
+        if metadata.len() > 1024 * 1024 {
+            return Err("导入文件不能超过 1 MB".into());
+        }
+        let content =
+            std::fs::read_to_string(&path).map_err(|error| format!("无法读取导入文件：{error}"))?;
+        service.import_profiles(&content).map(Some)
+    })
+    .await
+}
+
+#[tauri::command]
 async fn save_settings(state: State<'_, AppState>, settings: Settings) -> AppResult<Store> {
     blocking(state, move |s| s.save_settings(settings)).await
 }
@@ -222,6 +253,8 @@ fn run() -> AppResult<()> {
             delete_profile,
             import_profiles,
             export_profiles,
+            export_profiles_to_file,
+            import_profiles_from_file,
             save_settings,
             clear_history,
             set_auto_repair,
